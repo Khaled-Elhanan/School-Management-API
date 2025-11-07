@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/scr/" />
+  <Folder Name="/scr/core/">
+    <Project Path="Application/Application.csproj" />
+    <Project Path="Domain/Domain.csproj" />
+    <Project Path="Infrastructure/Infrastructure.csproj" />
+    <Project Path="WebApi/WebApi.csproj" />
+  </Folder>
+</Solution>
