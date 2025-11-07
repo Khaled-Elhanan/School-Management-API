@@ -21,11 +21,13 @@ namespace Infrastructure.Context
     {
         private new ABCSchoolTenantInfo? TenantInfo { get; set; }
 
+        
         protected BaseDbContext(IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantInfoContextAccessor , DbContextOptions options):
             base(tenantInfoContextAccessor, options)
         {
             TenantInfo = tenantInfoContextAccessor.MultiTenantContext?.TenantInfo;
         }
+        // Configure the DbContext to use the tenant-specific connection string
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -35,6 +37,7 @@ namespace Infrastructure.Context
                     options => options.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName));
             }
         }
+        // Apply all configurations from the current assembly   
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

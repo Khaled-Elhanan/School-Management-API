@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Context
 {
+
+
     public class ApplicationDbContext : BaseDbContext
     {
         public ApplicationDbContext(IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantInfoContextAccessor, 
