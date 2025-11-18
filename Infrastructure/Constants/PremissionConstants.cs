@@ -23,7 +23,7 @@
         string Action,
         string Feature,
         string Description,
-        string Group,
+        string Group="",
         bool IsBasic = false,
         
         bool IsRoot = false)
