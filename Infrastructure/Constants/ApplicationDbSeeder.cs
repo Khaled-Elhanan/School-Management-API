@@ -56,11 +56,13 @@ namespace Infrastructure.Constants
             // Assgin Role
             foreach (var roleName in RoleConstants.DefaultRoles)
             {
-                if (await _roleManager.Roles.SingleOrDefaultAsync(x => x.Name == roleName, cancellationToken) is not ApplicationRole incomingRole)
+                var incomingRole = await _roleManager.Roles.SingleOrDefaultAsync(x => x.Name == roleName, cancellationToken);
+                
+                if (incomingRole is null)
                 {
-
                     incomingRole = new ApplicationRole
                     {
+                        Id = Guid.NewGuid().ToString(),
                         Name = roleName,
                         Description = $"{roleName} Role",
                         
@@ -76,7 +78,7 @@ namespace Infrastructure.Constants
                 {
                     await AssignPermissionToRole(SchoolPermissions.Admin, incomingRole, cancellationToken);
                     
-                    if (_tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Id == TenancyConstants.Root.Id)
+                    if (_tenantInfoContextAccessor.MultiTenantContext?.TenantInfo?.Id == TenancyConstants.Root.Id)
                     {
                         await AssignPermissionToRole(SchoolPermissions.Root, incomingRole, cancellationToken);
                     }
@@ -98,9 +100,7 @@ namespace Infrastructure.Constants
                         RoleName=role.Name,
                         ClaimType=ClaimConstats.Permissions,
                         ClaimValue=permission.Name,
-                        Description=permission.Description,
-                        Group = permission.Group
-                        
+                        Description=permission.Description
 
                     }, cancellationToken);     
                     await _context.SaveChangesAsync(cancellationToken); 
@@ -109,23 +109,26 @@ namespace Infrastructure.Constants
             }
         }
         
-
         private async Task InitializeAdminUserAsync()
         {
-            if(string.IsNullOrEmpty(_tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email)) return;
-            if (await _userManager.Users.FirstOrDefaultAsync(user =>
-                    user.Email == _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email) is not ApplicationUser
-                incomingUser)
+            var tenantInfo = _tenantInfoContextAccessor.MultiTenantContext?.TenantInfo;
+            if(tenantInfo == null || string.IsNullOrEmpty(tenantInfo.Email)) return;
+            
+            var incomingUser = await _userManager.Users.FirstOrDefaultAsync(user =>
+                    user.Email == tenantInfo.Email);
+            
+            if (incomingUser is null)
             {
                 incomingUser = new ApplicationUser
                 {
-                    Email = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email,
-                    UserName = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email,
-                    FirstName = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.FirstName,
-                    LastName = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.LastName,
+                    Id = Guid.NewGuid().ToString(),
+                    Email = tenantInfo.Email,
+                    UserName = tenantInfo.Email,
+                    FirstName = tenantInfo.FirstName,
+                    LastName = tenantInfo.LastName,
                     PhoneNumberConfirmed = true ,
-                    NormalizedEmail = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email.ToUpperInvariant(),
-                    NormalizedUserName = _tenantInfoContextAccessor.MultiTenantContext.TenantInfo.Email.ToUpper(),
+                    NormalizedEmail = tenantInfo.Email.ToUpperInvariant(),
+                    NormalizedUserName = tenantInfo.Email.ToUpper(),
                     IsActive = true
                 };
                 var passwordHash = new PasswordHasher<ApplicationUser>();
