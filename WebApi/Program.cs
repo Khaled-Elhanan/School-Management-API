@@ -18,6 +18,9 @@ namespace WebApi
 
             builder.Services.AddInfrastructureServices(builder.Configuration);
 
+            // should add this 
+
+            builder.Services.GetJwtSettings(builder.Configuration);
 
             var app = builder.Build();
             

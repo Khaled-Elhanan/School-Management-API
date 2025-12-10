@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Text;
 using System.Threading.Tasks;
+using Application;
 using Application.Exceptions;
 using Application.Features.identity.Tokens;
 using Finbuckle.MultiTenant.Abstractions;
@@ -11,6 +12,7 @@ using Infrastructure.Constants;
 using Infrastructure.Identity.Models;
 using Infrastructure.Tenacy;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Identity.Tokens
@@ -20,17 +22,20 @@ namespace Infrastructure.Identity.Tokens
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMultiTenantContextAccessor<ABCSchoolTenantInfo> _tenantContextAccessor;
         private readonly RoleManager<ApplicationRole> _roleManager;
+        private readonly JwtSettings _jwtSettings;
 
-      
 
         public TokenService(
             UserManager<ApplicationUser> userManager,
             IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantContextAccessor,
-            RoleManager<ApplicationRole> roleManager)
+            RoleManager<ApplicationRole> roleManager
+,
+           IOptions< JwtSettings> jwtSettings)
         {
             _userManager = userManager;
             _tenantContextAccessor = tenantContextAccessor;
             _roleManager = roleManager;
+            _jwtSettings = jwtSettings.Value;
         }
 
         public async Task<TokenResponse> loginAsync(TokenRequest request)
@@ -105,7 +110,7 @@ namespace Infrastructure.Identity.Tokens
               ClockSkew=TimeSpan.Zero,
               RoleClaimType=ClaimTypes.Role,
               ValidateLifetime=true,
-              IssuerSigningKey =new SymmetricSecurityKey(Encoding.UTF8.GetBytes("WKEWROWKFSKFJSLFJKKSHJUSTWILLBEMYKEY"))
+              IssuerSigningKey =new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret))
 
             };
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -129,7 +134,7 @@ namespace Infrastructure.Identity.Tokens
 
             // Refresh Token (rotate)
             user.RefreshToken = GenerateRefreshToken();
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1); // or use config
+            user.RefreshTokenExpiryTime =DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpiryTimeInDays);
 
             await _userManager.UpdateAsync(user);
 
@@ -153,7 +158,7 @@ namespace Infrastructure.Identity.Tokens
         {
             var token = new JwtSecurityToken(
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(60),
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.TokenExpiryTimeInMinutes),
                 signingCredentials: signingCredentials);
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -164,7 +169,7 @@ namespace Infrastructure.Identity.Tokens
         // ---------------- Signing Key ----------------
         private SigningCredentials GenerateSigningCredentials()
         {
-            byte[] secret = Encoding.UTF8.GetBytes("WKEWROWKFSKFJSLFJKKSHJUSTWILLBEMYKEY");
+            byte[] secret = Encoding.UTF8.GetBytes(_jwtSettings.Secret);
             return new SigningCredentials(new SymmetricSecurityKey(secret), SecurityAlgorithms.HmacSha256);
         }
 
@@ -208,5 +213,7 @@ namespace Infrastructure.Identity.Tokens
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
+
+      
     }
 }
