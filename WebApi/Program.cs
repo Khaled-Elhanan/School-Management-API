@@ -31,13 +31,15 @@ namespace WebApi
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            
+            // Add multi-tenancy middleware 
+            app.UseInfrastructure();
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
-
-            // Add multi-tenancy middleware 
-            app.UseInfrastructure(); 
+ 
 
 
             app.MapControllers();
