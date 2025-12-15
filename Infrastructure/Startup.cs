@@ -220,7 +220,23 @@ namespace Infrastructure
 
         public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder app)
         {
-            return app.UseMultiTenant();
+            return app
+                .UseAuthentication()
+                .UseMultiTenant()
+                .UseAuthorization()
+                .UseOpenApiDocumentation();
+        }
+        // Middleware 
+        internal static IApplicationBuilder UseOpenApiDocumentation(this IApplicationBuilder app)
+        {
+            app.UseOpenApi();
+            app.UseSwaggerUi(options =>
+            {
+                options.DefaultModelExpandDepth = -1;
+                options.DocExpansion = "None";
+                options.TagsSorter = "alpha";
+            });
+            return app;
         }
     }
 }

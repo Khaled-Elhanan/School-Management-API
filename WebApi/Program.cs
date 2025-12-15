@@ -12,9 +12,12 @@ namespace WebApi
             // Add services to the container.
 
             builder.Services.AddControllers();
+            // __________________________________________________________________
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            // service 
+            // builder.Services.AddEndpointsApiExplorer();
+            // builder.Services.AddSwaggerGen();
+            // __________________________________________________________________
 
             builder.Services.AddInfrastructureServices(builder.Configuration);
 
@@ -29,18 +32,19 @@ namespace WebApi
             await app.Services.AddDatabaseInitializerAsync();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-            
+            // if (app.Environment.IsDevelopment())
+            // {
+            //     app.UseSwagger();
+            //     app.UseSwaggerUI();
+            // }
+            //
             // Add multi-tenancy middleware 
             app.UseInfrastructure();
 
             app.UseHttpsRedirection();
-
-            app.UseAuthorization();
+            
+            // no need it after adding service AddJwtAuthentication
+            // app.UseAuthorization();
  
 
 
