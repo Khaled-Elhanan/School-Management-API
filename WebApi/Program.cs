@@ -20,7 +20,7 @@ namespace WebApi
 
             // should add this 
 
-            builder.Services.GetJwtSettings(builder.Configuration);
+            builder.Services.AddJwtAuthentication(builder.Services.GetJwtSettings(builder.Configuration));
 
             var app = builder.Build();
             
@@ -40,7 +40,6 @@ namespace WebApi
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
             app.UseAuthorization();
  
 

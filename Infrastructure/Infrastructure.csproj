@@ -19,6 +19,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="NSwag.AspNetCore" Version="14.6.3" />
+    <PackageReference Include="NSwag.Core" Version="14.6.3" />
+    <PackageReference Include="NSwag.Generation" Version="14.6.3" />
   </ItemGroup>
 
   <ItemGroup>

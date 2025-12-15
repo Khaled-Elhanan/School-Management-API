@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using System.Net;
@@ -22,6 +21,12 @@ using System.Security.Claims;
 using System.Text;
 using Application.Wrappers;
 using Microsoft.AspNetCore.Http;
+using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
+using Infrastructure.OpenApi;
+using NSwag;
+using NSwag.Generation.Processors.Security;
+
 namespace Infrastructure
 {
     public static class Startup
@@ -44,7 +49,8 @@ namespace Infrastructure
                 .AddTransient<ITenantDbSeeder, TenantDbSeeder>()
                 .AddTransient<ApplicationDbSeeder>()
                 .AddIdentityServices()
-                .AddPermissions();
+                .AddPermissions()
+                .AddOpenApiDocumentation(config);
 
         }
 
@@ -152,8 +158,64 @@ namespace Infrastructure
                 };
 
             });
+            services
+                .AddAuthorization(options =>
+                {
+                    foreach(var prop in typeof(SchoolPermissions).GetNestedTypes()
+                        .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.FlattenHierarchy)))
+                    {
+                        var propretyValue = prop.GetValue(null) ;
+                        if(propretyValue is not null)
+                        {
+                            options.AddPolicy(propretyValue.ToString(), 
+                                policy => policy.RequireClaim(ClaimConstats.Permissions, propretyValue.ToString()));
+                               
+                        }
+                    }
+                });
+                          return services;
 
-           
+        }
+
+        internal static IServiceCollection AddOpenApiDocumentation(this IServiceCollection services,
+            IConfiguration config)
+        {
+            var swaggerSettings = config.GetSection(nameof(SwaggerSettings)).Get<SwaggerSettings>();
+            services.AddEndpointsApiExplorer();
+            _ = services.AddOpenApiDocument((document, serviceProvider) =>
+            {
+                document.PostProcess = doc =>
+                {
+                    doc.Info.Title = swaggerSettings.Title;
+                    doc.Info.Description = swaggerSettings.Description;
+                    doc.Info.Contact = new OpenApiContact
+                    {
+                        Name = swaggerSettings.Title,
+                        Email = swaggerSettings.ContactEmail,
+                        Url = swaggerSettings.ContactUrl
+
+                    };
+                    doc.Info.License = new OpenApiLicense
+                    {
+                        Name = swaggerSettings.LicenseName,
+                        Url = swaggerSettings.LicenseUrl,
+                    };
+                    document.AddSecurity(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        Description = "Enter your Bearer token to attach it as a header on your request.",
+                        In = OpenApiSecurityApiKeyLocation.Header,
+                        Type = OpenApiSecuritySchemeType.Http,
+                        Scheme = JwtBearerDefaults.AuthenticationScheme,
+                        BearerFormat = "JWT",
+                        
+                    });
+                    document.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor());
+                    document.OperationProcessors.Add(new SwaggerGlobalAuthProcessor());
+                    document.OperationProcessors.Add(new SwaggerHeaderAttributeProcessor());
+                };
+            });
+            return services; 
         }
 
         public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder app)
