@@ -1,4 +1,5 @@
 
+using Application;
 using Infrastructure;
 
 namespace WebApi
@@ -25,6 +26,10 @@ namespace WebApi
 
             builder.Services.AddJwtAuthentication(builder.Services.GetJwtSettings(builder.Configuration));
 
+            // from startup --. Application
+            builder.Services.AddApplicationServices();
+            
+            
             var app = builder.Build();
             
             // Database Seeder 

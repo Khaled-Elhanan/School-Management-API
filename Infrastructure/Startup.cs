@@ -181,10 +181,13 @@ namespace Infrastructure
             IConfiguration config)
         {
             var swaggerSettings = config.GetSection(nameof(SwaggerSettings)).Get<SwaggerSettings>();
+
             services.AddEndpointsApiExplorer();
-            _ = services.AddOpenApiDocument((document, serviceProvider) =>
+
+            _ = services.AddOpenApiDocument(options =>
             {
-                document.PostProcess = doc =>
+                // Basic document metadata (title, description, contact, license)
+                options.PostProcess = doc =>
                 {
                     doc.Info.Title = swaggerSettings.Title;
                     doc.Info.Description = swaggerSettings.Description;
@@ -193,29 +196,33 @@ namespace Infrastructure
                         Name = swaggerSettings.Title,
                         Email = swaggerSettings.ContactEmail,
                         Url = swaggerSettings.ContactUrl
-
                     };
+
                     doc.Info.License = new OpenApiLicense
                     {
                         Name = swaggerSettings.LicenseName,
                         Url = swaggerSettings.LicenseUrl,
                     };
-                    document.AddSecurity(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
-                    {
-                        Name = "Authorization",
-                        Description = "Enter your Bearer token to attach it as a header on your request.",
-                        In = OpenApiSecurityApiKeyLocation.Header,
-                        Type = OpenApiSecuritySchemeType.Http,
-                        Scheme = JwtBearerDefaults.AuthenticationScheme,
-                        BearerFormat = "JWT",
-                        
-                    });
-                    document.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor());
-                    document.OperationProcessors.Add(new SwaggerGlobalAuthProcessor());
-                    document.OperationProcessors.Add(new SwaggerHeaderAttributeProcessor());
                 };
+
+                // Add JWT bearer security definition so Swagger shows the "Authorize" button
+                const string securitySchemeName = "JWT";
+
+                options.AddSecurity(securitySchemeName, new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Description = "Type into the textbox: Bearer {your JWT token}.",
+                    In = OpenApiSecurityApiKeyLocation.Header,
+                    Type = OpenApiSecuritySchemeType.ApiKey
+                });
+
+                // Make all operations use the JWT security scheme by default
+                options.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor(securitySchemeName));
+                options.OperationProcessors.Add(new SwaggerGlobalAuthProcessor(securitySchemeName));
+                options.OperationProcessors.Add(new SwaggerHeaderAttributeProcessor());
             });
-            return services; 
+
+            return services;
         }
 
         public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder app)

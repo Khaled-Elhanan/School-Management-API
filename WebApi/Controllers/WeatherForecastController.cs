@@ -1,3 +1,5 @@
+using Infrastructure.Constants;
+using Infrastructure.Identity.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -17,7 +19,7 @@ namespace WebApi.Controllers
         {
             _logger = logger;
         }
-
+        // [ShouldHavePermission(action:SchoolAction.Read,feature:SchoolFeature.Schools)]
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {

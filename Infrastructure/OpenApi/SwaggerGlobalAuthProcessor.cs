@@ -9,13 +9,12 @@ using NSwag.Generation.Processors.Contexts;
 
 namespace Infrastructure.OpenApi;
 
-public class SwaggerGlobalAuthProcessor(string scheme):IOperationProcessor
+public class SwaggerGlobalAuthProcessor(string scheme) : IOperationProcessor
 {
     private readonly string _scheme = scheme;
 
-    public SwaggerGlobalAuthProcessor():this(JwtBearerDefaults.AuthenticationScheme)
+    public SwaggerGlobalAuthProcessor() : this("JWT")
     {
-        
     }
     public bool Process(OperationProcessorContext context)
     {
