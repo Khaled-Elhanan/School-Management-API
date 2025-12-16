@@ -51,8 +51,9 @@ namespace WebApi
             // no need it after adding service AddJwtAuthentication
             // app.UseAuthorization();
  
-
-
+            //ADD my Custom  ErrorHandlingMiddleware 
+            
+            app.UseMiddleware<ErrorHandlingMiddleware>();
             app.MapControllers();
 
             app.Run();

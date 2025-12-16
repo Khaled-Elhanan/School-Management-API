@@ -11,5 +11,5 @@ public class ConflictException :Exception
     {
         ErrorMessage = errorMessage;
         StatusCode = statusCode;
-    }
+    } 
 }

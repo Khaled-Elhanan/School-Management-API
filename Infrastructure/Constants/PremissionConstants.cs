@@ -6,6 +6,7 @@
         public const string Create = nameof(Create);
         public const string Update = nameof(Update);
         public const string Delete = nameof(Delete);
+        public const string RefreshToken = nameof(RefreshToken);
         public const string UpgradeSubscription = nameof(UpgradeSubscription);
     }
 
@@ -17,6 +18,8 @@
         public const string UserRoles = nameof(UserRoles);
         public const string RoleClaims = nameof(RoleClaims);
         public const string Schools = nameof(Schools);
+        public const string Tokens = nameof(Tokens);
+        
     }
 
     public record SchoolPermission(
@@ -38,7 +41,6 @@
         {
             new SchoolPermission(SchoolAction.Create, SchoolFeature.Tenants, "Permission to create tenants","Tenancy" ,  IsRoot: true),
             new SchoolPermission(SchoolAction.Read, SchoolFeature.Tenants, "Permission to read tenants", "Tenancy" ,IsRoot: true),
-            new SchoolPermission(SchoolAction.Update, SchoolFeature.Tenants, "Permission to update tenants", "Tenancy" ,IsRoot: true),
             new SchoolPermission(SchoolAction.Delete, SchoolFeature.Tenants, "Permission to delete tenants","Tenancy" , IsRoot: true),
 
             new SchoolPermission(SchoolAction.Read, SchoolFeature.Users, "Permission to read users", "SystemAccess" ,IsBasic: true),
@@ -62,11 +64,16 @@
 
             new SchoolPermission(SchoolAction.Read, SchoolFeature.Schools, "Permission to read schools","Academics",IsBasic: true),
             new SchoolPermission(SchoolAction.UpgradeSubscription, SchoolFeature.Schools, "Permission to upgrade school subscription","Academics"),
+            
+            
+            new SchoolPermission(SchoolAction.RefreshToken, SchoolFeature.Tokens, "Generate Refresh Token","SystemAccess",IsBasic:true),
+            
+            
         };
 
         public static IReadOnlyList<SchoolPermission> All => _allPermissions;
         public static IReadOnlyList<SchoolPermission> Root  => _allPermissions.Where(p=>p.IsRoot).ToArray();
-        public static IReadOnlyList<SchoolPermission> Admin   => _allPermissions.Where(p=>p.IsBasic).ToArray();
         public static IReadOnlyList<SchoolPermission> Basic   => _allPermissions.Where(p=>p.IsBasic).ToArray();
+        public static IReadOnlyList<SchoolPermission> Admin   => _allPermissions.Where(p=>!p.IsRoot).ToArray();
     }
 }

@@ -25,6 +25,15 @@ public class ResponseWrapper : IResponseWrapper
     }
 
     // Fail
+    public static ResponseWrapper Fail()
+    {
+        return new ResponseWrapper
+        {
+            IsSuccessful = false,
+            Messages = new List<string>()
+        };
+    }
+
     public static ResponseWrapper Fail(string message)
     {
         return new ResponseWrapper
@@ -46,6 +55,9 @@ public class ResponseWrapper : IResponseWrapper
     // Async versions
     public static Task<ResponseWrapper> SuccessAsync(string message = null)
         => Task.FromResult(Success(message));
+
+    public static Task<ResponseWrapper> FailAsync()
+        => Task.FromResult(Fail());
 
     public static Task<ResponseWrapper> FailAsync(string message)
         => Task.FromResult(Fail(message));
@@ -78,6 +90,16 @@ public class ResponseWrapper<T> : ResponseWrapper, IResponseWrapper<T>
     }
 
     // Fail
+    public static ResponseWrapper<T> Fail()
+    {
+        return new ResponseWrapper<T>
+        {
+            IsSuccessful = false,
+            Messages = new List<string>(),
+            Data = default
+        };
+    }
+
     public static ResponseWrapper<T> Fail(string message)
     {
         return new ResponseWrapper<T>
@@ -101,6 +123,9 @@ public class ResponseWrapper<T> : ResponseWrapper, IResponseWrapper<T>
     // Async
     public static Task<ResponseWrapper<T>> SuccessAsync(T data, string message = null)
         => Task.FromResult(Success(data, message));
+
+    public static Task<ResponseWrapper<T>> FailAsync()
+        => Task.FromResult(Fail());
 
     public static Task<ResponseWrapper<T>> FailAsync(string message)
         => Task.FromResult(Fail(message));

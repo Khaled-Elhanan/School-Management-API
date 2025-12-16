@@ -1,5 +1,7 @@
 using Application.Features.identity.Tokens;
 using Application.Features.identity.Tokens.Queries;
+using Infrastructure.Constants;
+using Infrastructure.Identity.Auth;
 using Infrastructure.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -27,10 +29,11 @@ namespace WebApi.Controllers
             return Ok(response);
         }
 
-        [HttpPost("refresh")]
+        [HttpPost("refresh-token")]
         [AllowAnonymous]
         [TenantHeader]
         [OpenApiOperation(("Used to obtain jwt for refresh."))]
+        [ShouldHavePermission(action:SchoolAction.RefreshToken , feature:SchoolFeature.Tokens)]
         public async Task<IActionResult> GetRefreshTokenAsync([FromBody] RefreshTokenRequest refreshTokenRequest)
         {
             var response = await Sender.Send(new GetRefreshTokenQuery{RefreshToken = refreshTokenRequest});
