@@ -23,6 +23,7 @@ using Application.Wrappers;
 using Microsoft.AspNetCore.Http;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
+using Application.Tenancy;
 using Infrastructure.OpenApi;
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -48,6 +49,7 @@ namespace Infrastructure
                     options.UseSqlServer(config.GetConnectionString("DefaultConnection")))
                 .AddTransient<ITenantDbSeeder, TenantDbSeeder>()
                 .AddTransient<ApplicationDbSeeder>()
+                .AddTransient<ITenantService,TenantService>()
                 .AddIdentityServices()
                 .AddPermissions()
                 .AddOpenApiDocumentation(config);
@@ -103,6 +105,7 @@ namespace Infrastructure
             {
                 bearer.RequireHttpsMetadata = false;
                 bearer.SaveToken = true;
+                bearer.MapInboundClaims = false; // Disable claim mapping to preserve original claim types
                 bearer.TokenValidationParameters = new TokenValidationParameters
                 {
 
@@ -216,9 +219,11 @@ namespace Infrastructure
                 options.AddSecurity(securitySchemeName, new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
-                    Description = "Type into the textbox: Bearer {your JWT token}.",
+                    Description = "Enter your JWT token (without 'Bearer ' prefix).",
                     In = OpenApiSecurityApiKeyLocation.Header,
-                    Type = OpenApiSecuritySchemeType.ApiKey
+                    Type = OpenApiSecuritySchemeType.Http,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT"
                 });
 
                 // Make all operations use the JWT security scheme by default

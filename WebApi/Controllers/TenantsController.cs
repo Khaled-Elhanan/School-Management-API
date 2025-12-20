@@ -61,29 +61,28 @@ namespace WebApi.Controllers
             return Ok(response);
         }
 
-        [HttpGet("tenantId")]
+        [HttpGet("{tenantId}")]
         [ShouldHavePermission(SchoolAction.Read, SchoolFeature.Tenants)]
-        public async Task<IActionResult> GetTenantById(string tenantId)
+        public async Task<IActionResult> GetTenantById([FromRoute] string tenantId)
         {
-            var response = await Sender.Send(new GetTenantByIdQuery {TenantId = tenantId});
-            if (response.IsSuccessful)
+            var response = await Sender.Send(new GetTenantByIdQuery { TenantId = tenantId });
+            if (!response.IsSuccessful)
             {
-                return  Ok(response);
-                
+                return BadRequest(response);
             }
-            return BadRequest(response);
+            return Ok(response);
         }
+        
         [HttpGet("all")]
         [ShouldHavePermission(SchoolAction.Read, SchoolFeature.Tenants)]
         public async Task<IActionResult> GetTenantsAsync()
         {
-            var response = await Sender.Send(new GetTenantByIdQuery ());
-            if (response.IsSuccessful)
+            var response = await Sender.Send(new GetTenantsQuery());
+            if (!response.IsSuccessful)
             {
-                return  Ok(response);
-                
+                return BadRequest(response);
             }
-            return BadRequest(response);
+            return Ok(response);
         }
         
     }

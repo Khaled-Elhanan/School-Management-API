@@ -19,7 +19,7 @@ public class ActivateTenantCommandHandler: IRequestHandler<ActivateTenantCommand
 
     public async Task<IResponseWrapper> Handle(ActivateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenantId = await _tenantService.ActivateTenantAsync(request.TenantId , cancellationToken);
+        var tenantId = await _tenantService.ActivateTenantAsync(request.TenantId );
         return await ResponseWrapper<string>.SuccessAsync(data:tenantId , "Tenant activated successfully");
         
     }

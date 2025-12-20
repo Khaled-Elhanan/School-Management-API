@@ -13,7 +13,7 @@ public class PermissionPolicyProvider(IOptions<AuthorizationOptions> options):IA
     
     public Task<AuthorizationPolicy?> GetPolicyAsync(string permission)
     {
-        if (permission.StartsWith(ClaimConstats.Permissions, StringComparison.OrdinalIgnoreCase))
+        if (permission.StartsWith("Permission.", StringComparison.OrdinalIgnoreCase))
         {
             var policy = new AuthorizationPolicyBuilder();
             policy.AddRequirements(new PermissionRequirment(permission));

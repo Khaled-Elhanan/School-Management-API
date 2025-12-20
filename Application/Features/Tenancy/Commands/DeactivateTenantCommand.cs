@@ -23,7 +23,7 @@ public class DeactivateTenantCommandHandler
         CancellationToken cancellationToken)
     {
         var deactivatedTenantId = await _tenantService
-            .DeactivateTenantAsync(request.TenantId, cancellationToken);
+            .DeactivateTenantAsync(request.TenantId);
 
         return await ResponseWrapper<string>
             .SuccessAsync(
