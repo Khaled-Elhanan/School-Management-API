@@ -22,7 +22,6 @@ using System.Text;
 using Application.Wrappers;
 using Microsoft.AspNetCore.Http;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using Application.Tenancy;
 using Infrastructure.OpenApi;
 using NSwag;
@@ -84,7 +83,7 @@ namespace Infrastructure
                 .AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>()
                 .AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         }
-        // jwtsetting --> appsettings.json
+        // JWT settings --> appsettings.json
         public static JwtSettings GetJwtSettings(this IServiceCollection services, IConfiguration config)
         {
             var jwtSettingsConfig = config.GetSection(nameof(JwtSettings));
@@ -125,10 +124,14 @@ namespace Infrastructure
                     {
                         if (context.Exception is SecurityTokenExpiredException)
                         {
-                            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                            context.Response.ContentType = "application/json";
-                            var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("Token has expired."));
-                            return context.Response.WriteAsync(result);
+                            if (!context.Response.HasStarted)
+                            {
+                                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                                context.Response.ContentType = "application/json";
+                                var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("Token has expired."));
+                                return context.Response.WriteAsync(result);
+                            }
+                            return Task.CompletedTask;
                         }
                         else
                         {
@@ -136,7 +139,7 @@ namespace Infrastructure
                             {
                                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                                 context.Response.ContentType = "application/json";
-                                var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("An unhandled error has occured"));
+                                var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("An unhandled error has occurred"));
                                 return context.Response.WriteAsync(result);
                             }
                             return Task.CompletedTask;
@@ -157,10 +160,14 @@ namespace Infrastructure
                     },
                     OnForbidden = context =>
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                        context.Response.ContentType = "application/json";
-                        var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("You are not authorize to access this resource."));
-                        return context.Response.WriteAsync(result);
+                        if (!context.Response.HasStarted)
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                            context.Response.ContentType = "application/json";
+                            var result = JsonConvert.SerializeObject(ResponseWrapper.Fail("You are not authorized to access this resource."));
+                            return context.Response.WriteAsync(result);
+                        }
+                        return Task.CompletedTask;
                     }
 
                 };
@@ -172,11 +179,11 @@ namespace Infrastructure
                     foreach(var prop in typeof(SchoolPermissions).GetNestedTypes()
                         .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.FlattenHierarchy)))
                     {
-                        var propretyValue = prop.GetValue(null) ;
-                        if(propretyValue is not null)
+                        var propertyValue = prop.GetValue(null) ;
+                        if(propertyValue is not null)
                         {
-                            options.AddPolicy(propretyValue.ToString(), 
-                                policy => policy.RequireClaim(ClaimConstats.Permissions, propretyValue.ToString()));
+                            options.AddPolicy(propertyValue.ToString(), 
+                                policy => policy.RequireClaim(ClaimConstats.Permissions, propertyValue.ToString()));
                                
                         }
                     }

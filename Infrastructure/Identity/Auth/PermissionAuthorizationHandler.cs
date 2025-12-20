@@ -6,17 +6,16 @@ namespace Infrastructure.Identity.Auth;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirment>
 {
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirment requirement)
+    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirment requirement)
     {
         var permissions = context.User.Claims
             .Where(x => x.Type == ClaimConstats.Permissions
                         && x.Value == requirement.Permission);
         if (permissions.Any())
         {
-         context.Succeed(requirement); 
-         await Task.CompletedTask;
+            context.Succeed(requirement);
         }
-      
+        return Task.CompletedTask;
     }
     
 }

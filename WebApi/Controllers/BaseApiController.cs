@@ -1,6 +1,5 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
@@ -8,8 +7,6 @@ namespace WebApi.Controllers
     public class BaseApiController : ControllerBase
     {
         private ISender? _sender;
-        public ISender Sender =>  _sender ?? HttpContext.RequestServices.GetService<ISender>();
-        
-        
+        public ISender Sender => _sender ??= HttpContext.RequestServices.GetRequiredService<ISender>();
     }
 }

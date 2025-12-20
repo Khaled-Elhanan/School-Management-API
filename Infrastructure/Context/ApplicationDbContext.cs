@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Finbuckle.MultiTenant.Abstractions;
 using Infrastructure.Tenacy;
 using Microsoft.EntityFrameworkCore;

@@ -2,16 +2,24 @@ using System.Net;
 using System.Text.Json;
 using Application.Exceptions;
 using Application.Wrappers;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Hosting;
 
 namespace WebApi;
 
 public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
-    public ErrorHandlingMiddleware(RequestDelegate next)
+    private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly IWebHostEnvironment _environment;
+    
+    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IWebHostEnvironment environment)
     {
         _next = next;
+        _logger = logger;
+        _environment = environment;
     }
+    
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -20,6 +28,9 @@ public class ErrorHandlingMiddleware
         }
         catch(Exception ex)
         {
+            // Log the actual exception
+            _logger.LogError(ex, "An unhandled exception occurred: {Message}", ex.Message);
+            
             var response = context.Response;
             response.ContentType = "application/json";
             var responseWrapper= ResponseWrapper.Fail();
@@ -49,7 +60,20 @@ public class ErrorHandlingMiddleware
                 
                 default:
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    responseWrapper.Messages=["Something went wrong . Contact Administrator."];
+                    // In development, show the actual error message
+                    if (_environment.IsDevelopment())
+                    {
+                        responseWrapper.Messages = new List<string> 
+                        { 
+                            ex.Message,
+                            ex.InnerException?.Message ?? string.Empty,
+                            ex.StackTrace ?? string.Empty
+                        }.Where(m => !string.IsNullOrEmpty(m)).ToList();
+                    }
+                    else
+                    {
+                        responseWrapper.Messages = new List<string> { "Something went wrong . Contact Administrator." };
+                    }
                     break;
             }
             

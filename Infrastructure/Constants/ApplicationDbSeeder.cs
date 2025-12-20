@@ -26,27 +26,22 @@ namespace Infrastructure.Constants
 
         public async Task InitalizeDatabaseAsync(CancellationToken cancellationToken)
         {
-            if (_context.Database.GetMigrations().Any())
+            // Check if we can connect to the database
+            if (await _context.Database.CanConnectAsync(cancellationToken))
             {
-                if ((await _context.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
+                // Check if there are any pending migrations and apply them
+                var pendingMigrations = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
+                if (pendingMigrations.Any())
                 {
                     await _context.Database.MigrateAsync(cancellationToken);
                 }
                 
-                if (await _context.Database.CanConnectAsync(cancellationToken))
-                {
-                    
-                    // Default Roles > Assgin permission/claims
-                    
-                    await InitializeDefaultRolesAsync(cancellationToken);
-                    
-                    // User > Assgin Roles 
-                    await InitializeAdminUserAsync();
-
-
-                }
+                // Default Roles > Assign permission/claims
+                await InitializeDefaultRolesAsync(cancellationToken);
+                
+                // User > Assign Roles 
+                await InitializeAdminUserAsync();
             }
-            
         }
     
         private async Task InitializeDefaultRolesAsync(CancellationToken cancellationToken)

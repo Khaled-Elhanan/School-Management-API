@@ -1,9 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
 using System.Text;
-using System.Threading.Tasks;
 using Application;
 using Application.Exceptions;
 using Application.Features.identity.Tokens;
@@ -28,9 +26,8 @@ namespace Infrastructure.Identity.Tokens
         public TokenService(
             UserManager<ApplicationUser> userManager,
             IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantContextAccessor,
-            RoleManager<ApplicationRole> roleManager
-,
-           IOptions< JwtSettings> jwtSettings)
+            RoleManager<ApplicationRole> roleManager,
+            IOptions<JwtSettings> jwtSettings)
         {
             _userManager = userManager;
             _tenantContextAccessor = tenantContextAccessor;
@@ -88,7 +85,12 @@ namespace Infrastructure.Identity.Tokens
             var userPrincipal = GetClaimsPrincipalFromExpiringToken(request.CurrentJwt);
             var userEmail = userPrincipal.GetEmail();
             
-            var userInDb= await _userManager.FindByEmailAsync(userEmail) ?? 
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                throw new UnauthorizedException(["Invalid token: email claim not found."]);
+            }
+            
+            var userInDb = await _userManager.FindByEmailAsync(userEmail) ?? 
                 throw new UnauthorizedException(["Authentication failed."]);
             if (userInDb.RefreshToken != request.CurrentRefreshToken || userInDb.RefreshTokenExpiryTime < DateTime.UtcNow)
             {
@@ -115,10 +117,10 @@ namespace Infrastructure.Identity.Tokens
             };
             var tokenHandler = new JwtSecurityTokenHandler();
             var principal = tokenHandler.ValidateToken(expiringToken, tkValidationParams , out var securityToken);
-            if (securityToken is not JwtSecurityToken jwtSecurityToken || jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
+            if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
                 StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new UnauthorizedException(["Invalid token provided. Failed to generate new token ."]);
+                throw new UnauthorizedException(["Invalid token provided. Failed to generate new token."]);
             }
             return principal;
         }
@@ -196,7 +198,7 @@ namespace Infrastructure.Identity.Tokens
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.Name, user.FirstName ?? string.Empty),
                 new Claim(ClaimTypes.Surname, user.LastName ?? string.Empty),
-                new Claim(ClaimConstats.Tenant, _tenantContextAccessor.MultiTenantContext.TenantInfo.Id),
+                new Claim(ClaimConstats.Tenant, _tenantContextAccessor.MultiTenantContext?.TenantInfo?.Id ?? string.Empty),
                 new Claim(ClaimTypes.MobilePhone, user.PhoneNumber ?? string.Empty)
             }.Union(roleClaims)
             .Union(userClaims)

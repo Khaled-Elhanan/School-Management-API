@@ -37,23 +37,14 @@ namespace WebApi
             await app.Services.AddDatabaseInitializerAsync();
 
             // Configure the HTTP request pipeline.
-            // if (app.Environment.IsDevelopment())
-            // {
-            //     app.UseSwagger();
-            //     app.UseSwaggerUI();
-            // }
-            //
-            // Add multi-tenancy middleware 
-            app.UseInfrastructure();
-
+            // Error handling middleware should be early in the pipeline
+            app.UseMiddleware<ErrorHandlingMiddleware>();
+            
             app.UseHttpsRedirection();
             
-            // no need it after adding service AddJwtAuthentication
-            // app.UseAuthorization();
+            // Add multi-tenancy and authentication/authorization middleware
+            app.UseInfrastructure();
  
-            //ADD my Custom  ErrorHandlingMiddleware 
-            
-            app.UseMiddleware<ErrorHandlingMiddleware>();
             app.MapControllers();
 
             app.Run();

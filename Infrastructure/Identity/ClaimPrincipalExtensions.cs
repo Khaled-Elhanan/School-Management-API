@@ -5,7 +5,7 @@ namespace Infrastructure.Identity
 {
     public static class ClaimPrincipalExtensions
     {
-        public static string GetEmail(this ClaimsPrincipal principal)
+        public static string? GetEmail(this ClaimsPrincipal principal)
            => principal.FindFirstValue(ClaimTypes.Email);
         public static string GetUserId(this ClaimsPrincipal principal)
             => principal.FindFirstValue(ClaimTypes.NameIdentifier);

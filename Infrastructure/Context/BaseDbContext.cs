@@ -1,4 +1,4 @@
-﻿using Finbuckle.MultiTenant.Abstractions;
+using Finbuckle.MultiTenant.Abstractions;
 using Finbuckle.MultiTenant.EntityFrameworkCore;
 using Infrastructure.Identity.Models;
 using Infrastructure.Tenacy;
@@ -31,7 +31,9 @@ namespace Infrastructure.Context
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            if(!string.IsNullOrEmpty(TenantInfo?.ConnectionString))
+            // Only override connection string if tenant has a specific one
+            // Otherwise, use the default connection string configured in DI
+            if(!string.IsNullOrWhiteSpace(TenantInfo?.ConnectionString))
             {
                 optionsBuilder.UseSqlServer(TenantInfo.ConnectionString ,
                     options => options.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName));
