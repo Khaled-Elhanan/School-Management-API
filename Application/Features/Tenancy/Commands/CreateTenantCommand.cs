@@ -3,7 +3,7 @@ using MediatR;
 
 namespace Application.Tenancy.Commands;
 
-public class CreateTenantCommand: IRequest<IResponseWrapper>, IRequest
+public class CreateTenantCommand: IRequest<IResponseWrapper>
 {
     public   CreateTenantRequest CreateTenant { get; set; }
 }

@@ -8,7 +8,7 @@ public interface ITenantService
     Task<string>ActivateTenantAsync(string tenantId, CancellationToken  cancellationToken);
     Task<string> DeactivateTenantAsync(string tenantId, CancellationToken  cancellationToken);
     Task<string> UpdateSubscriptionAsync(UpdateTenantSubscriptionRequest updateTenantSubscription);
-    Task<List<TenantResponse>> GetTenantsAsync(string tenantId);
+    Task<List<TenantResponse>> GetTenantsAsync();
     Task<TenantResponse> GetTenantByIdAsync(string tenantId);
 
 }
