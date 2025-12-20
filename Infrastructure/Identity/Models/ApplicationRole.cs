@@ -11,7 +11,7 @@ namespace Infrastructure.Identity.Models
     {
         public string? Description { get; set; } 
 
-        public string? Group { get; set; } 
+        public string? TenantId { get; set; } 
 
     }
 }

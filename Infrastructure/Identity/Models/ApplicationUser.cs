@@ -14,7 +14,8 @@ namespace Infrastructure.Identity.Models
         public string? LastName { get; set; }
 
         public bool IsActive { get; set; }
-        public string  RefreshToken { get; set; }
+        // Initialize RefreshToken to empty string to avoid null inserts into a non-nullable column
+        public string  RefreshToken { get; set; } = string.Empty;
 
         public DateTime RefreshTokenExpiryTime   { get; set; }
        
