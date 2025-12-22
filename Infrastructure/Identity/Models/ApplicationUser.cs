@@ -18,6 +18,7 @@ namespace Infrastructure.Identity.Models
         public string  RefreshToken { get; set; } = string.Empty;
 
         public DateTime RefreshTokenExpiryTime   { get; set; }
-       
+        public string? TenantId { get; set; }
+
     }
 }

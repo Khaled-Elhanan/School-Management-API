@@ -1,9 +1,10 @@
-using Application.Tenancy;
 using Application.Exceptions;
+using Application.Tenancy;
 using Finbuckle.MultiTenant;
 using Finbuckle.MultiTenant.Abstractions;
 using Infrastructure.Constants;
 using Mapster;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
@@ -33,10 +34,12 @@ public class TenantService : ITenantService
         await _tenantStore.TryUpdateAsync(tenantInDb);
         return tenantInDb.Identifier;
     }
-    
-    public async Task<string> CreateTenantAsync(CreateTenantRequest createTenant, CancellationToken cancellationToken)
+
+    public async Task<string> CreateTenantAsync(
+    CreateTenantRequest createTenant,
+    CancellationToken cancellationToken)
     {
-        // Check if tenant with this identifier already exists
+        // Check duplicate identifier
         if (!string.IsNullOrWhiteSpace(createTenant.Identifier))
         {
             var existingTenant = await _tenantStore.TryGetAsync(createTenant.Identifier);
@@ -44,57 +47,58 @@ public class TenantService : ITenantService
             {
                 throw new ConflictException(
                     new List<string> { $"A tenant with identifier '{createTenant.Identifier}' already exists." },
-                    HttpStatusCode.Conflict
-                );
+                    HttpStatusCode.Conflict);
             }
         }
 
+        // ?? Handle connection string properly
+        var connectionString =
+            string.IsNullOrWhiteSpace(createTenant.ConnectionString) ||
+            createTenant.ConnectionString == "string"
+                ? _serviceProvider
+                    .GetRequiredService<IConfiguration>()
+                    .GetConnectionString("DefaultConnection")
+                : createTenant.ConnectionString;
+
         var newTenant = new ABCSchoolTenantInfo
         {
-            // Ensure primary key is set; Finbuckle requires non-null Id
-            Id = string.IsNullOrWhiteSpace(createTenant.Identifier) 
-                ? Guid.NewGuid().ToString() 
+            Id = string.IsNullOrWhiteSpace(createTenant.Identifier)
+                ? Guid.NewGuid().ToString()
                 : createTenant.Identifier,
+
             Identifier = createTenant.Identifier,
             IsActive = createTenant.IsActive,
             Name = createTenant.Name,
-            ConnectionString = createTenant.ConnectionString,
+            ConnectionString = connectionString,
             Email = createTenant.Email,
             FirstName = createTenant.FirstName,
             LastName = createTenant.LastName,
-            ValidUpTo = createTenant.ValidUpTo,
-           
+            ValidUpTo = createTenant.ValidUpTo
         };
-        
-        try
-        {
-            await _tenantStore.TryAddAsync(newTenant);
-        }
-        catch (Exception ex) when (ex.Message.Contains("duplicate key") || ex.Message.Contains("PRIMARY KEY"))
-        {
-            throw new ConflictException(
-                new List<string> { $"A tenant with identifier '{createTenant.Identifier}' already exists." },
-                HttpStatusCode.Conflict
-            );
-        }  
-        
-        // Seeding tenant data (only if connection string is provided)
-        if (!string.IsNullOrWhiteSpace(newTenant.ConnectionString))
-        {
-            using var scope = _serviceProvider.CreateScope();
-            scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>()
-                .MultiTenantContext= new MultiTenantContext<ABCSchoolTenantInfo>()
+
+        await _tenantStore.TryAddAsync(newTenant);
+
+        // ?? IMPORTANT: run seeder INSIDE tenant context
+        using var scope = _serviceProvider.CreateScope();
+
+        var tenantContextSetter =
+            scope.ServiceProvider.GetRequiredService<IMultiTenantContextSetter>();
+
+        tenantContextSetter.MultiTenantContext =
+            new MultiTenantContext<ABCSchoolTenantInfo>
             {
-                TenantInfo = newTenant,
+                TenantInfo = newTenant
             };
-            await scope.ServiceProvider.GetRequiredService<ApplicationDbSeeder>()
-                .InitalizeDatabaseAsync(cancellationToken);
-        }
-        
+
+        await scope.ServiceProvider
+            .GetRequiredService<ApplicationDbSeeder>()
+            .InitalizeDatabaseAsync(cancellationToken);
+
         return newTenant.Identifier;
     }
 
-   
+
+
 
     public async Task<string> DeactivateTenantAsync(string tenantId)
     {

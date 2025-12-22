@@ -4,140 +4,208 @@ using Infrastructure.Identity.Models;
 using Infrastructure.Tenacy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Mail;
+using System.Text.RegularExpressions;
 
 namespace Infrastructure.Constants
 {
     public class ApplicationDbSeeder
     {
-        public ApplicationDbSeeder(RoleManager<ApplicationRole> roleManager,
-          IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantInfoContextAccessor,
-          UserManager<ApplicationUser> userManager,
-          ApplicationDbContext context)
-        {
-            _roleManager = roleManager;
-            _tenantInfoContextAccessor = tenantInfoContextAccessor;
-            _userManager = userManager;
-            _context = context;
-        }
-        private readonly IMultiTenantContextAccessor<ABCSchoolTenantInfo> _tenantInfoContextAccessor;
+        private readonly IMultiTenantContextAccessor<ABCSchoolTenantInfo> _tenantContext;
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _context;
 
+        public ApplicationDbSeeder(
+            RoleManager<ApplicationRole> roleManager,
+            IMultiTenantContextAccessor<ABCSchoolTenantInfo> tenantContext,
+            UserManager<ApplicationUser> userManager,
+            ApplicationDbContext context)
+        {
+            _roleManager = roleManager;
+            _tenantContext = tenantContext;
+            _userManager = userManager;
+            _context = context;
+        }
+
+        // =========================================================
+        // Entry
+        // =========================================================
         public async Task InitalizeDatabaseAsync(CancellationToken cancellationToken)
         {
-            // Check if we can connect to the database
-            if (await _context.Database.CanConnectAsync(cancellationToken))
-            {
-                // Check if there are any pending migrations and apply them
-                var pendingMigrations = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
-                if (pendingMigrations.Any())
-                {
-                    await _context.Database.MigrateAsync(cancellationToken);
-                }
-                
-                // Default Roles > Assign permission/claims
-                await InitializeDefaultRolesAsync(cancellationToken);
-                
-                // User > Assign Roles 
-                await InitializeAdminUserAsync();
-            }
+            if (!await _context.Database.CanConnectAsync(cancellationToken))
+                return;
+
+            var pending = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
+            if (pending.Any())
+                await _context.Database.MigrateAsync(cancellationToken);
+
+            await InitializeDefaultRolesAsync(cancellationToken);
+            await InitializeAdminUserAsync(cancellationToken);
         }
-    
+
+        // =========================================================
+        // Roles (Tenant-Aware & Safe)
+        // =========================================================
         private async Task InitializeDefaultRolesAsync(CancellationToken cancellationToken)
         {
-            // Assgin Role
+            var tenant = _tenantContext.MultiTenantContext?.TenantInfo
+                ?? throw new InvalidOperationException("Tenant context is missing.");
+
+            var tenantId = tenant.Identifier!;
+
             foreach (var roleName in RoleConstants.DefaultRoles)
             {
-                var incomingRole = await _roleManager.Roles.SingleOrDefaultAsync(x => x.Name == roleName, cancellationToken);
-                
-                if (incomingRole is null)
+                var tenantAwareRoleName = BuildTenantAwareName(tenantId, roleName);
+
+                var role = await _roleManager.Roles
+                    .SingleOrDefaultAsync(r =>
+                        r.Name == tenantAwareRoleName &&
+                        r.TenantId == tenantId,
+                        cancellationToken);
+
+                if (role == null)
                 {
-                    incomingRole = new ApplicationRole
+                    role = new ApplicationRole
                     {
                         Id = Guid.NewGuid().ToString(),
-                        Name = roleName,
+                        Name = tenantAwareRoleName,
+                        NormalizedName = tenantAwareRoleName.ToUpperInvariant(),
                         Description = $"{roleName} Role",
-                        
+                        TenantId = tenantId
                     };
-                    await _roleManager.CreateAsync(incomingRole);
+
+                    var result = await _roleManager.CreateAsync(role);
+                    if (!result.Succeeded)
+                        throw new Exception("Create role failed: " +
+                            string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
-                // Assgin permissions
+
                 if (roleName == RoleConstants.Basic)
                 {
-                    await AssignPermissionToRole(SchoolPermissions.Basic , incomingRole ,cancellationToken);
+                    await AssignPermissionsAsync(role, SchoolPermissions.Basic, cancellationToken);
                 }
                 else if (roleName == RoleConstants.Admin)
                 {
-                    await AssignPermissionToRole(SchoolPermissions.Admin, incomingRole, cancellationToken);
-                    
-                    if (_tenantInfoContextAccessor.MultiTenantContext?.TenantInfo?.Id == TenancyConstants.Root.Id)
+                    await AssignPermissionsAsync(role, SchoolPermissions.Admin, cancellationToken);
+
+                    if (tenantId == TenancyConstants.Root.Id)
                     {
-                        await AssignPermissionToRole(SchoolPermissions.Root, incomingRole, cancellationToken);
+                        await AssignPermissionsAsync(role, SchoolPermissions.Root, cancellationToken);
                     }
                 }
-
             }
         }
-        private async Task AssignPermissionToRole(IReadOnlyList<SchoolPermission> rolePermission, 
-            ApplicationRole role , CancellationToken cancellationToken)
+
+        private async Task AssignPermissionsAsync(
+            ApplicationRole role,
+            IReadOnlyList<SchoolPermission> permissions,
+            CancellationToken cancellationToken)
         {
-            var currentClaims = await _roleManager.GetClaimsAsync(role);
-            foreach (var permission in rolePermission)
+            var existingClaims = await _roleManager.GetClaimsAsync(role);
+
+            foreach (var permission in permissions)
             {
-                if (!currentClaims.Any(x => x.Type == ClaimConstats.Permissions && x.Value == permission.Name))
+                if (existingClaims.Any(c =>
+                        c.Type == ClaimConstats.Permissions &&
+                        c.Value == permission.Name))
+                    continue;
+
+                await _context.RoleClaims.AddAsync(new ApplicationRoleClaim
                 {
-                    await _context.RoleClaims.AddAsync(new ApplicationRoleClaim
-                    {
-                        RoleId=role.Id,
-                        RoleName=role.Name,
-                        ClaimType=ClaimConstats.Permissions,
-                        ClaimValue=permission.Name,
-                        Description=permission.Description
-
-                    }, cancellationToken);     
-                    await _context.SaveChangesAsync(cancellationToken); 
-                     
-                }
+                    RoleId = role.Id,
+                    RoleName = role.Name,
+                    ClaimType = ClaimConstats.Permissions,
+                    ClaimValue = permission.Name,
+                    Description = permission.Description
+                }, cancellationToken);
             }
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
-        
-        private async Task InitializeAdminUserAsync()
+
+        // =========================================================
+        // Admin User (Tenant-Aware & Bulletproof)
+        // =========================================================
+        private async Task InitializeAdminUserAsync(CancellationToken cancellationToken)
         {
-            var tenantInfo = _tenantInfoContextAccessor.MultiTenantContext?.TenantInfo;
-            if(tenantInfo == null || string.IsNullOrEmpty(tenantInfo.Email)) return;
-            
-            var incomingUser = await _userManager.Users.FirstOrDefaultAsync(user =>
-                    user.Email == tenantInfo.Email);
-            
-            if (incomingUser is null)
+            var tenant = _tenantContext.MultiTenantContext?.TenantInfo;
+            if (tenant == null) return;
+
+            var tenantId = tenant.Identifier!;
+            var safeEmail = IsValidEmail(tenant.Email)
+                ? tenant.Email!
+                : $"{tenantId}@no-email.local";
+
+            var tenantAwareUserName =
+                Sanitize(BuildTenantAwareName(tenantId, safeEmail));
+
+            var user = await _userManager.Users
+                .SingleOrDefaultAsync(u =>
+                    u.UserName == tenantAwareUserName &&
+                    u.TenantId == tenantId,
+                    cancellationToken);
+
+            if (user == null)
             {
-                incomingUser = new ApplicationUser
+                user = new ApplicationUser
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Email = tenantInfo.Email,
-                    UserName = tenantInfo.Email,
-                    FirstName = tenantInfo.FirstName,
-                    LastName = tenantInfo.LastName,
-                    PhoneNumberConfirmed = true ,
-                    NormalizedEmail = tenantInfo.Email.ToUpperInvariant(),
-                    NormalizedUserName = tenantInfo.Email.ToUpper(),
-                    IsActive = true
+                    Email = IsValidEmail(tenant.Email) ? tenant.Email : null,
+                    UserName = tenantAwareUserName,
+                    NormalizedEmail = IsValidEmail(tenant.Email)
+                        ? tenant.Email!.ToUpperInvariant()
+                        : null,
+                    NormalizedUserName = tenantAwareUserName.ToUpperInvariant(),
+                    FirstName = tenant.FirstName,
+                    LastName = tenant.LastName,
+                    IsActive = true,
+                    TenantId = tenantId,
+                    EmailConfirmed = IsValidEmail(tenant.Email)
                 };
-                var passwordHash = new PasswordHasher<ApplicationUser>();
-                incomingUser.PasswordHash = passwordHash.
-                    HashPassword(incomingUser, TenancyConstants.DefaultPaasword);
-                await _userManager.CreateAsync(incomingUser);
-                
+
+                var hasher = new PasswordHasher<ApplicationUser>();
+                user.PasswordHash = hasher.HashPassword(
+                    user,
+                    TenancyConstants.DefaultPaasword);
+
+                var result = await _userManager.CreateAsync(user);
+                if (!result.Succeeded)
+                    throw new Exception("Create admin user failed: " +
+                        string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            if (!await _userManager.IsInRoleAsync(incomingUser, RoleConstants.Admin))
+            var adminRoleName =
+                BuildTenantAwareName(tenantId, RoleConstants.Admin);
+
+            if (!await _userManager.IsInRoleAsync(user, adminRoleName))
             {
-                await _userManager.AddToRoleAsync(incomingUser, RoleConstants.Admin);
+                var result = await _userManager.AddToRoleAsync(user, adminRoleName);
+                if (!result.Succeeded)
+                    throw new Exception("Add admin role failed: " +
+                        string.Join(", ", result.Errors.Select(e => e.Description)));
             }
-            
-            
         }
 
+        // =========================================================
+        // Helpers
+        // =========================================================
+        private static string BuildTenantAwareName(string tenantId, string value)
+            => $"{tenantId}__{value}";
+
+        private static bool IsValidEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            try { _ = new MailAddress(email); return true; }
+            catch { return false; }
+        }
+
+        private static string Sanitize(string input)
+        {
+            var lower = input.ToLowerInvariant();
+            var clean = Regex.Replace(lower, "[^a-z0-9]", "_");
+            clean = Regex.Replace(clean, "_{2,}", "_").Trim('_');
+            return clean.Length > 200 ? clean[..200] : clean;
+        }
     }
 }
