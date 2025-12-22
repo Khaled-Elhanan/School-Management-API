@@ -57,12 +57,7 @@ namespace Infrastructure.Constants
             foreach (var roleName in RoleConstants.DefaultRoles)
             {
                 var tenantAwareRoleName = BuildTenantAwareName(tenantId, roleName);
-
-                var role = await _roleManager.Roles
-                    .SingleOrDefaultAsync(r =>
-                        r.Name == tenantAwareRoleName &&
-                        r.TenantId == tenantId,
-                        cancellationToken);
+                var role = await _roleManager.FindByNameAsync(tenantAwareRoleName);
 
                 if (role == null)
                 {
@@ -175,8 +170,7 @@ namespace Infrastructure.Constants
                         string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            var adminRoleName =
-                BuildTenantAwareName(tenantId, RoleConstants.Admin);
+            var adminRoleName = BuildTenantAwareName(tenantId, RoleConstants.Admin);
 
             if (!await _userManager.IsInRoleAsync(user, adminRoleName))
             {

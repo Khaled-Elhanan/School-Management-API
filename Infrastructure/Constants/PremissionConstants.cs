@@ -40,7 +40,7 @@
         private static readonly SchoolPermission[] _allPermissions =
         {
             new SchoolPermission(SchoolAction.Create, SchoolFeature.Tenants, "Permission to create tenants","Tenancy" ,  IsRoot: true),
-            new SchoolPermission(SchoolAction.Read, SchoolFeature.Tenants, "Permission to read tenants", "Tenancy" ,IsRoot: true),
+            new SchoolPermission(SchoolAction.Read, SchoolFeature.Tenants, "Permission to read tenants", "Tenancy"),
             new SchoolPermission(SchoolAction.Delete, SchoolFeature.Tenants, "Permission to delete tenants","Tenancy" , IsRoot: true),
 
             new SchoolPermission(SchoolAction.Read, SchoolFeature.Users, "Permission to read users", "SystemAccess" ,IsBasic: true),

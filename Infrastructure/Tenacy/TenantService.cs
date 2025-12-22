@@ -73,7 +73,7 @@ public class TenantService : ITenantService
             Email = createTenant.Email,
             FirstName = createTenant.FirstName,
             LastName = createTenant.LastName,
-            ValidUpTo = createTenant.ValidUpTo
+            ValidUpTo = createTenant.ValidUpTo == default ? DateTime.UtcNow.AddYears(1) : createTenant.ValidUpTo
         };
 
         await _tenantStore.TryAddAsync(newTenant);
