@@ -26,6 +26,8 @@ using Application.Tenancy;
 using Infrastructure.OpenApi;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using Application.Features.Schools;
+using Infrastructure.Schools;
 
 namespace Infrastructure
 {
@@ -49,6 +51,7 @@ namespace Infrastructure
                 .AddTransient<ITenantDbSeeder, TenantDbSeeder>()
                 .AddTransient<ApplicationDbSeeder>()
                 .AddTransient<ITenantService,TenantService>()
+                .AddTransient<ISchoolService, SchoolService>()  
                 .AddIdentityServices()
                 .AddPermissions()
                 .AddOpenApiDocumentation(config);
