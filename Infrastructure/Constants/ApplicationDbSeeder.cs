@@ -171,7 +171,7 @@ namespace Infrastructure.Constants
             }
 
             var adminRoleName = BuildTenantAwareName(tenantId, RoleConstants.Admin);
-
+                                                                                                
             if (!await _userManager.IsInRoleAsync(user, adminRoleName))
             {
                 var result = await _userManager.AddToRoleAsync(user, adminRoleName);

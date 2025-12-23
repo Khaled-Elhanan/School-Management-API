@@ -19,7 +19,7 @@ namespace WebApi.Controllers
         {
             _logger = logger;
         }
-        // [ShouldHavePermission(action:SchoolAction.Read,feature:SchoolFeature.Schools)]
+        [ShouldHavePermission(action: SchoolAction.Read, feature: SchoolFeature.Schools)]
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {
