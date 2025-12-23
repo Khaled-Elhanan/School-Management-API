@@ -33,8 +33,7 @@ namespace Infrastructure.Constants
         // =========================================================
         public async Task InitalizeDatabaseAsync(CancellationToken cancellationToken)
         {
-            if (!await _context.Database.CanConnectAsync(cancellationToken))
-                return;
+
 
             var pending = await _context.Database.GetPendingMigrationsAsync(cancellationToken);
             if (pending.Any())

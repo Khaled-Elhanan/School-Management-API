@@ -15,6 +15,11 @@ namespace Infrastructure.Context
         {
           
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Ignore<ABCSchoolTenantInfo>();
+        }
         public DbSet<School> Schools => Set<School>();
         
     }

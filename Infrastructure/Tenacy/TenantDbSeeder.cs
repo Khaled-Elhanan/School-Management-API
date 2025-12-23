@@ -65,8 +65,8 @@ public class TenantDbSeeder :ITenantDbSeeder
     }
     private async Task InitializeApplicationDbForTenantAsync(ABCSchoolTenantInfo currentTenant , CancellationToken cancellationToken)
     {
-        // Ensure tenant has a connection string (use default if not set)
-        if (string.IsNullOrWhiteSpace(currentTenant.ConnectionString))
+        // Ensure tenant has a connection string (use default if not set or if strictly "string")
+        if (string.IsNullOrWhiteSpace(currentTenant.ConnectionString) || currentTenant.ConnectionString == "string")
         {
             var defaultConnectionString = _configuration.GetConnectionString("DefaultConnection");
             currentTenant.ConnectionString = defaultConnectionString;
