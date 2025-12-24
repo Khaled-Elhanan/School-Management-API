@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace Application.Features.Schools.Queries
 {
-    public class SchoolByNameQuery : IRequest<IResponseWrapper>
+    public class GetSchoolByNameQuery : IRequest<IResponseWrapper>
     {
         public string Name { get; set; }
     }
 
-    public class SchoolByNameQueryHandler : IRequestHandler<SchoolByNameQuery, IResponseWrapper>
+    public class SchoolByNameQueryHandler : IRequestHandler<GetSchoolByNameQuery, IResponseWrapper>
     {
         private readonly ISchoolService _schoolService;
 
@@ -23,7 +23,7 @@ namespace Application.Features.Schools.Queries
             _schoolService = schoolService;
         }
 
-        public async Task<IResponseWrapper> Handle(SchoolByNameQuery request, CancellationToken cancellationToken)
+        public async Task<IResponseWrapper> Handle(GetSchoolByNameQuery request, CancellationToken cancellationToken)
         {
             var schoolInDb = await _schoolService.GetByNameAsync(request.Name);
             if (schoolInDb == null)
