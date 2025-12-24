@@ -56,7 +56,7 @@ public class ResponseWrapper : IResponseWrapper
     public static Task<ResponseWrapper> SuccessAsync(string message = null)
         => Task.FromResult(Success(message));
 
-    public static Task<ResponseWrapper> FailAsync()
+    public static Task<ResponseWrapper> FailAsync(List<string> message)
         => Task.FromResult(Fail());
 
     public static Task<ResponseWrapper> FailAsync(string message)
