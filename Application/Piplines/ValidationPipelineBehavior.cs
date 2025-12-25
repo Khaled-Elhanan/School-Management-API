@@ -1,10 +1,11 @@
-﻿using Application.Wrappers;
+﻿using Application.Piplines;
+using Application.Wrappers;
 using FluentValidation;
 using MediatR;
 
 public class ValidationPipelineBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : IRequest<TResponse>    , IValidateMe
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -26,7 +27,7 @@ public class ValidationPipelineBehavior<TRequest, TResponse>
         var context = new ValidationContext<TRequest>(request);
         var validationResults = await Task.WhenAll(
             _validators.Select(v => v.ValidateAsync(context, cancellationToken))
-        );
+        );                                 
 
         var failures = validationResults
             .SelectMany(r => r.Errors)

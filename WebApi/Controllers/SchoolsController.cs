@@ -85,5 +85,11 @@ namespace WebApi.Controllers
              return NotFound(response);
 
         }
+        [HttpGet("debug-claims")]
+        public IActionResult GetClaims()
+        {
+             return Ok(User.Claims.Select(c => new { c.Type, c.Value }));
         }
+
+    }
 }

@@ -164,6 +164,24 @@ namespace Infrastructure.Constants
                 IsBasic: true),
 
             new SchoolPermission(
+                SchoolAction.Create,
+                SchoolFeature.Schools,
+                "Permission to create schools",
+                "Academics"),
+
+            new SchoolPermission(
+                SchoolAction.Update,
+                SchoolFeature.Schools,
+                "Permission to update schools",
+                "Academics"),
+
+             new SchoolPermission(
+                SchoolAction.Delete,
+                SchoolFeature.Schools,
+                "Permission to delete schools",
+                "Academics"),
+
+            new SchoolPermission(
                 SchoolAction.UpgradeSubscription,
                 SchoolFeature.Schools,
                 "Permission to upgrade school subscription",

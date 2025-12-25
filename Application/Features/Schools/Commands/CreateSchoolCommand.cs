@@ -1,4 +1,5 @@
-﻿using Application.Wrappers;
+﻿using Application.Piplines;
+using Application.Wrappers;
 using Domain.Entities;
 using Mapster;
 using MediatR;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Application.Features.Schools.Commands
 {
-    public class CreateSchoolCommand : IRequest<IResponseWrapper>
+    public class CreateSchoolCommand : IRequest<IResponseWrapper>,IValidateMe
     {
         public CreateSchoolRequest CreateSchool { get; set; }
 
