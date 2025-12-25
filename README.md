@@ -383,7 +383,7 @@ and enables permission changes without code redeployment.
 ## 👤 Author
 
 **Khaled Abd Elhanan** — Backend Software Engineer  
-📧 khaled.elhanan@gmail.com  
+📧 khaledabdelhanan1@gmail.com  
 GitHub: https://github.com/Khaled-Elhanan  
 LinkedIn: https://www.linkedin.com/in/khaled-abd-elhanan-253328217/
 
